@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SafeScholar Staff Sign Up</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B0F17;
+    --navy-soft: #121A27;
+    --line: #243047;
+    --accent: #4FD1C5;
+    --accent-deep: #0E7C73;
+    --danger: #B42318;
+    --ink: #10141C;
+    --ink-soft: #566074;
+    --field-line: #D5DBE5;
+    --text-2: #B7C1D1;
+    --muted: #8B98AD;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--navy);
+    color: #fff;
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 0; }
+  .brand { display: flex; align-items: center; gap: 0.7rem; }
+  .brand img { width: 38px; height: 38px; display: block; }
+  .brand span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.35rem; }
+  .topbar a.back { color: var(--accent); font-weight: 600; font-size: 0.95rem; text-decoration: none; }
+  .topbar a.back:hover { text-decoration: underline; }
+  .topbar a.back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  main { flex: 1; }
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+    gap: 4rem;
+    align-items: start;
+    padding: 2rem 0 4rem;
+  }
+  .intro h1 { font-size: clamp(2.1rem, 4.2vw, 3rem); line-height: 1.1; margin-bottom: 1rem; max-width: 14ch; }
+  .intro p { margin: 0 0 2rem; color: var(--text-2); font-size: 1.05rem; max-width: 42ch; }
+  .intro p strong { color: #fff; font-weight: 600; }
+
+  /* Step tracker */
+  .progress { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .progress li { display: flex; align-items: center; gap: 0.8rem; color: var(--muted); font-weight: 500; }
+  .progress .num {
+    flex: none;
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    font-size: 0.9rem;
+  }
+  .progress li.active { color: #fff; }
+  .progress li.active .num { background: var(--accent); border-color: var(--accent); color: #06201C; font-weight: 600; }
+  .progress li.done { color: var(--text-2); }
+  .progress li.done .num { border-color: var(--accent); color: var(--accent); }
+
+  /* Card */
+  .card {
+    background: #fff;
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  }
+  .card h2 { font-size: 1.5rem; color: var(--navy); margin-bottom: 0.4rem; }
+  .card .note { margin: 0 0 1.4rem; font-size: 0.92rem; color: var(--ink-soft); }
+  .card .note strong { color: var(--ink); font-weight: 600; }
+
+  .error-box, .success-box {
+    display: none;
+    font-size: 0.88rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 7px;
+    margin-bottom: 1.1rem;
+  }
+  .error-box { background: #FEF3F2; border: 1px solid #FDA29B; color: #B42318; }
+  .success-box { background: #E6F7F5; border: 1px solid #9ADBD4; color: #0B5F58; }
+  .error-box.visible, .success-box.visible { display: block; }
+
+  .field { margin-bottom: 1.1rem; }
+  .field label { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 0.4rem; }
+  .field input, .field select {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.98rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--field-line);
+    border-radius: 8px;
+  }
+  .field select { cursor: pointer; }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent-deep);
+    box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.45);
+  }
+  .field.invalid input, .field.invalid select {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.15);
+  }
+  .hint { font-size: 0.8rem; color: var(--ink-soft); margin: 0.4rem 0 0; }
+  .field.invalid .hint { color: var(--danger); }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .pw-row { position: relative; }
+  .pw-row input { padding-right: 4.5rem; }
+  .pw-toggle {
+    position: absolute; top: 50%; right: 0.5rem; transform: translateY(-50%);
+    padding: 0.35rem 0.55rem;
+    font-family: inherit; font-size: 0.8rem; font-weight: 600;
+    color: var(--accent-deep); background: transparent; border: none; border-radius: 5px; cursor: pointer;
+  }
+  .pw-toggle:hover { text-decoration: underline; }
+  .pw-toggle:focus-visible { outline: 2px solid var(--accent-deep); }
+
+  .code-input { text-align: center; font-size: 1.6rem !important; letter-spacing: 0.5em; padding-left: 1.2rem !important; }
+
+  .submit-btn {
+    display: block;
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 0.4rem;
+    font-family: inherit; font-size: 0.98rem; font-weight: 600;
+    text-align: center; text-decoration: none;
+    color: #06201C; background: var(--accent);
+    border: none; border-radius: 8px; cursor: pointer;
+  }
+  .submit-btn:hover { filter: brightness(0.94); }
+  .submit-btn:disabled { opacity: 0.6; cursor: default; }
+  .submit-btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+  .alt-text { margin: 1.25rem 0 0; font-size: 0.9rem; color: var(--ink-soft); text-align: center; }
+  .alt-text a, .link-btn { color: var(--accent-deep); font-weight: 600; text-decoration: none; }
+  .link-btn { padding: 0; font-family: inherit; font-size: inherit; background: none; border: none; cursor: pointer; }
+  .alt-text a:hover, .link-btn:hover:not(:disabled) { text-decoration: underline; }
+  .alt-text a:focus-visible, .link-btn:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; border-radius: 3px; }
+  .link-btn:disabled { color: var(--ink-soft); cursor: default; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 1.75rem; padding: 1rem 0 2.5rem; }
+    .intro h1 { max-width: none; }
+    .intro p { margin-bottom: 0; }
+    .progress { display: none; }
+  }
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 1fr; gap: 0; }
+    .card { padding: 1.5rem; }
+  }
+</style>
+<link rel="icon" type="image/png" href="SafeScholar-logo.png">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <img src="SafeScholar-logo.png" alt="">
+      <span>SafeScholar</span>
+    </div>
+    <a class="back" href="index.html">Log in</a>
+  </div>
+</div>
+
+<main>
+  <div class="wrap hero">
+    <div class="intro">
+      <h1>Create your staff account.</h1>
+      <p>Only GMI staff can sign up. Use your staff email ending in <strong>edu@gmail.com</strong>.</p>
+      <ol class="progress" id="progress" aria-label="Sign up steps">
+        <li class="active"><span class="num">1</span>Create account</li>
+        <li><span class="num">2</span>Verify email</li>
+        <li><span class="num">3</span>Log in</li>
+      </ol>
+    </div>
+
+    <div class="card">
+
+      <!-- Step 1: create account -->
+      <section id="stepSignup">
+        <h2>Create staff account</h2>
+        <p class="note">Fill in your details below.</p>
+
+        <div id="signupError" class="error-box" role="alert"></div>
+
+        <form id="signupForm" novalidate>
+          <div class="field">
+            <label for="fullName">Full name</label>
+            <input type="text" id="fullName" required autofocus autocomplete="name">
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="staffId">Staff ID</label>
+              <input type="text" id="staffId" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="department">Department</label>
+              <select id="department" required>
+                <option value="" selected disabled>Select department</option>
+                <option value="FPGS">FPGS</option>
+                <option value="CID">CID</option>
+                <option value="EED">EED</option>
+                <option value="MED">MED</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" id="emailField">
+            <label for="email">Staff email</label>
+            <input type="email" id="email" required autocomplete="email" placeholder="yournameedu@gmail.com">
+            <p class="hint" id="emailHint">Must end in edu@gmail.com</p>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw-row">
+              <input type="password" id="password" required autocomplete="new-password">
+              <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show passwords">Show</button>
+            </div>
+            <p class="hint">At least 8 characters, with a letter and a number.</p>
+          </div>
+
+          <div class="field" id="confirmField">
+            <label for="confirmPassword">Confirm password</label>
+            <input type="password" id="confirmPassword" required autocomplete="new-password">
+            <p class="hint" id="confirmHint">Passwords do not match.</p>
+          </div>
+
+          <button type="submit" class="submit-btn" id="signupBtn">Create account</button>
+        </form>
+
+        <p class="alt-text">Already have an account? <a href="index.html">Log in</a></p>
+      </section>
+
+      <!-- Step 2: verify email -->
+      <section id="stepVerify" class="hidden">
+        <h2>Verify your email</h2>
+        <p class="note" id="verifyNote"></p>
+
+        <div id="verifyMsg" class="error-box" role="alert"></div>
+
+        <form id="verifyForm" novalidate>
+          <div class="field">
+            <label for="code">6-digit code</label>
+            <input type="text" id="code" class="code-input" inputmode="numeric" maxlength="6"
+                   autocomplete="one-time-code" required>
+          </div>
+          <button type="submit" class="submit-btn" id="verifyBtn">Verify email</button>
+        </form>
+
+        <p class="alt-text">Didn't get the code? <button type="button" class="link-btn" id="resendBtn">Resend code</button></p>
+      </section>
+
+      <!-- Step 3: done -->
+      <section id="stepDone" class="hidden">
+        <h2>Email verified</h2>
+        <p class="note">Your staff account is ready. Log in with your staff email and password.</p>
+        <a href="index.html" class="submit-btn">Go to login</a>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+const STAFF_EMAIL_RE = /^[a-z0-9._-]+edu@gmail\.com$/i;
+
+const $ = (id) => document.getElementById(id);
+let pendingEmail = "";
+let cooldownTimer = null;
+
+function showStep(id) {
+  const order = ["stepSignup", "stepVerify", "stepDone"];
+  order.forEach((s) => $(s).classList.toggle("hidden", s !== id));
+
+  // Update the step tracker on the left
+  const current = order.indexOf(id);
+  $("progress").querySelectorAll("li").forEach((li, i) => {
+    const finished = id === "stepDone" || i < current;
+    li.classList.toggle("done", finished);
+    li.classList.toggle("active", !finished && i === current);
+    li.querySelector(".num").textContent = finished ? "\u2713" : String(i + 1);
+  });
+}
+
+function showBox(box, message, kind) {
+  box.className = (kind === "success" ? "success-box" : "error-box") + " visible";
+  box.textContent = message;
+}
+
+function hideBox(box) {
+  box.classList.remove("visible");
+}
+
+function errorMessage(data) {
+  if (data && typeof data.detail === "string") return data.detail;
+  if (data && Array.isArray(data.detail) && data.detail.length) {
+    return String(data.detail[0].msg).replace(/^Value error, /, "");
+  }
+  return "Something went wrong. Is the server running?";
+}
+
+async function postJson(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(errorMessage(data));
+  return data;
+}
+
+function openVerifyStep(email, note) {
+  pendingEmail = email;
+  $("verifyNote").innerHTML = "";
+  $("verifyNote").append(note + " ");
+  const strong = document.createElement("strong");
+  strong.textContent = email;
+  $("verifyNote").append(strong);
+  showStep("stepVerify");
+  $("code").focus();
+}
+
+function startCooldown(seconds) {
+  const btn = $("resendBtn");
+  clearInterval(cooldownTimer);
+  let left = seconds;
+  btn.disabled = true;
+  btn.textContent = `Resend code (${left}s)`;
+  cooldownTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) {
+      clearInterval(cooldownTimer);
+      btn.disabled = false;
+      btn.textContent = "Resend code";
+    } else {
+      btn.textContent = `Resend code (${left}s)`;
+    }
+  }, 1000);
+}
+
+// Show / hide both password fields together
+$("pwToggle").addEventListener("click", () => {
+  const reveal = $("password").type === "password";
+  $("password").type = reveal ? "text" : "password";
+  $("confirmPassword").type = reveal ? "text" : "password";
+  $("pwToggle").textContent = reveal ? "Hide" : "Show";
+  $("pwToggle").setAttribute("aria-label", reveal ? "Hide passwords" : "Show passwords");
+});
+
+// Live checks
+$("email").addEventListener("input", () => {
+  const v = $("email").value.trim();
+  $("emailField").classList.toggle("invalid", v !== "" && !STAFF_EMAIL_RE.test(v));
+});
+
+function checkConfirm() {
+  const c = $("confirmPassword").value;
+  $("confirmField").classList.toggle("invalid", c !== "" && c !== $("password").value);
+}
+$("confirmPassword").addEventListener("input", checkConfirm);
+$("password").addEventListener("input", checkConfirm);
+
+// Step 1: create account
+$("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorBox = $("signupError");
+  hideBox(errorBox);
+
+  const payload = {
+    full_name: $("fullName").value,
+    staff_id: $("staffId").value,
+    email: $("email").value,
+    department: $("department").value,
+    password: $("password").value,
+    confirm_password: $("confirmPassword").value
+  };
+
+  if (Object.values(payload).some((v) => !v.trim())) {
+    return showBox(errorBox, "Fill in every field.");
+  }
+  if (!STAFF_EMAIL_RE.test(payload.email.trim())) {
+    $("emailField").classList.add("invalid");
+    return showBox(errorBox, "Use your staff email ending in edu@gmail.com.");
+  }
+  if (payload.password !== payload.confirm_password) {
+    $("confirmField").classList.add("invalid");
+    return showBox(errorBox, "Passwords do not match.");
+  }
+
+  const btn = $("signupBtn");
+  btn.disabled = true;
+  btn.textContent = "Creating account...";
+  try {
+    const data = await postJson("/staff/signup", payload);
+    openVerifyStep(data.email, "We sent a 6-digit code to");
+    showBox($("verifyMsg"), "Code sent. It expires in 10 minutes.", "success");
+    startCooldown(60);
+  } catch (err) {
+    showBox(errorBox, err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Create account";
+  }
+});
+
+// Step 2: verify
+$("verifyForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideBox($("verifyMsg"));
+  const btn = $("verifyBtn");
+  btn.disabled = true;
+  btn.textContent = "Verifying...";
+  try {
+    await postJson("/staff/verify", { email: pendingEmail, code: $("code").value });
+    showStep("stepDone");
+  } catch (err) {
+    showBox($("verifyMsg"), err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Verify email";
+  }
+});
+
+$("code").addEventListener("input", () => {
+  $("code").value = $("code").value.replace(/\D/g, "");
+});
+
+$("resendBtn").addEventListener("click", async () => {
+  hideBox($("verifyMsg"));
+  try {
+    await postJson("/staff/resend", { email: pendingEmail });
+    showBox($("verifyMsg"), "If this account is waiting for verification, a new code is on its way.", "success");
+    startCooldown(60);
+  } catch (err) {
+    showBox($("verifyMsg"), err.message);
+  }
+});
+
+// Coming from the login page with an unverified account: jump straight to the code step.
+const verifyParam = new URLSearchParams(window.location.search).get("verify");
+if (verifyParam && STAFF_EMAIL_RE.test(verifyParam.trim())) {
+  openVerifyStep(verifyParam.trim().toLowerCase(), "Enter the code we emailed to");
+}
+</script>
+</body>
+</html>

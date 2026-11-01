@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>SafeScholar Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  /* Palette taken from the login page (index.html) */
+  html[data-bs-theme="dark"] {
+    --ss-navy: #0B0F17;
+    --ss-accent: #4FD1C5;
+    --ss-muted: #8B98AD;
+    --tblr-body-bg: #0B0F17;
+    --tblr-body-bg-rgb: 11, 15, 23;
+    --tblr-bg-surface: #121826;
+    --tblr-bg-surface-secondary: #0F1522;
+    --tblr-bg-surface-tertiary: #0F1522;
+    --tblr-bg-forms: #0F1522;
+    --tblr-border-color: rgba(255, 255, 255, 0.08);
+    --tblr-border-color-translucent: rgba(255, 255, 255, 0.06);
+    --tblr-body-color: #E6EBF2;
+    --tblr-secondary-color: #8B98AD;
+    --tblr-muted: #8B98AD;
+    --tblr-primary: #4FD1C5;
+    --tblr-primary-rgb: 79, 209, 197;
+    --tblr-primary-fg: #06201C;
+    --tblr-link-color: #4FD1C5;
+    --tblr-link-color-rgb: 79, 209, 197;
+    --tblr-font-sans-serif: 'IBM Plex Sans', sans-serif;
+  }
+  body { background: var(--ss-navy); font-family: 'IBM Plex Sans', sans-serif; }
+  .brand-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.4rem; letter-spacing: -0.01em; color: #fff; }
+  .navbar { border-bottom: 1px solid var(--tblr-border-color); }
+  .btn-primary, .btn-outline-primary:hover { color: #06201C; }
+
+  .page-title { font-family: 'Fraunces', serif; font-weight: 600; }
+  .stat-card .value { font-size: 2.2rem; font-weight: 600; line-height: 1.1; }
+  .badge-critical { background: #dc2626; color: #fff; }
+  .badge-high { background: #ea580c; color: #fff; }
+  .badge-medium { background: #2563eb; color: #fff; }
+  .badge-low { background: #64748b; color: #fff; }
+
+  #liveDot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #22c55e; display: inline-block;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+  .feed-scroll { max-height: 440px; overflow-y: auto; }
+  #incidentsTable thead th { position: sticky; top: 0; z-index: 1; background: var(--tblr-bg-surface-secondary); }
+  #incidentsTable tbody tr.new-row { animation: flash 2s ease-out; }
+  @keyframes flash {
+    0% { background-color: rgba(79, 209, 197, 0.30); } 100% { background-color: transparent; }
+  }
+  .toast-container { z-index: 1080; }
+  .toast { background: var(--tblr-bg-surface); color: var(--tblr-body-color); border: 1px solid var(--tblr-border-color); }
+  .modal-content { background: var(--tblr-bg-surface); }
+  /* High-contrast student appeal text on the dark dashboard */
+  .student-appeal-reason {
+    background-color: #202c3e;
+    color: #f8fafc;
+    border: 1px solid #52637c;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+    min-height: 58px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="navbar navbar-expand-md d-print-none">
+    <div class="container-xl">
+      <span class="navbar-brand brand-title">SafeScholar <span class="text-secondary fs-4 fw-normal">Admin</span></span>
+      <div class="navbar-nav flex-row align-items-center gap-3 ms-auto">
+        <span class="text-secondary small"><span id="liveDot"></span> Live &mdash; polling every 10s</span>
+        <span class="text-secondary small" id="whoami"></span>
+        <button class="btn btn-outline-primary btn-sm" id="weeklyBtn">Summarise this week</button>
+        <button class="btn btn-outline-secondary btn-sm" id="logoutBtn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+    <div class="page-header d-print-none">
+      <div class="container-xl">
+        <div class="page-pretitle">Prompt-safety monitoring</div>
+        <h2 class="page-title">Incident overview</h2>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="container-xl">
+
+        <!-- Summary cards -->
+        <div class="row row-deck row-cards mb-3" id="summaryCards">
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card">
+              <div class="card-status-top" style="background:#dc2626"></div>
+              <div class="card-body">
+                <div class="subheader">Critical</div>
+                <div class="value" id="count-critical">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card">
+              <div class="card-status-top" style="background:#ea580c"></div>
+              <div class="card-body">
+                <div class="subheader">High</div>
+                <div class="value" id="count-high">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card">
+              <div class="card-status-top" style="background:#2563eb"></div>
+              <div class="card-body">
+                <div class="subheader">Medium</div>
+                <div class="value" id="count-medium">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card">
+              <div class="card-status-top" style="background:#64748b"></div>
+              <div class="card-body">
+                <div class="subheader">Low</div>
+                <div class="value" id="count-low">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row row-cards">
+          <!-- Chart -->
+          <div class="col-lg-4">
+            <div class="card h-100">
+              <div class="card-header"><h3 class="card-title">Incidents by severity</h3></div>
+              <div class="card-body">
+                <canvas id="severityChart" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident feed -->
+          <div class="col-lg-8">
+            <div class="card h-100">
+              <div class="card-header"><h3 class="card-title">Live incident feed</h3></div>
+              <div class="card-body border-bottom py-3">
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <select class="form-select form-select-sm" id="filterSeverity">
+                      <option value="">All severities</option>
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select form-select-sm" id="filterCategory">
+                      <option value="">All categories</option>
+                      <option value="prompt_injection">LLM01: Prompt Injection / Jailbreak</option>
+                      <option value="harmful_content">LLM02: Harmful Content / Cyber Misuse</option>
+                      <option value="sensitive_information">LLM03: Sensitive Information Disclosure</option>
+                      <option value="academic_dishonesty">LLM04: Academic Dishonesty</option>
+                      <option value="social_engineering">LLM05: AI Manipulation / Roleplay Bypass</option>
+                      <option value="encoded_attacks">LLM06: Encoded / Obfuscated Attacks</option>
+                      <option value="ai_review">AI Second Review</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm" id="filterDevice" placeholder="Filter by device label">
+                  </div>
+                </div>
+              </div>
+              <div class="table-responsive feed-scroll">
+                <table class="table table-vcenter card-table table-hover" id="incidentsTable">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Severity</th>
+                      <th>Score</th>
+                      <th>Category</th>
+                      <th>Device</th>
+                      <th>Message</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="card-footer text-secondary small" id="emptyState"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Score explanation modal -->
+<div class="modal modal-blur fade" id="whyModal" tabindex="-1" aria-labelledby="whyTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="whyTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="whyBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="appealModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Student Appeal Review</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body" id="appealBody"></div>
+    <div class="modal-footer"><button class="btn btn-success" id="approveAppeal">Approve</button><button class="btn btn-outline-danger" id="rejectAppeal">Reject</button></div>
+  </div></div>
+</div>
+<!-- Weekly summary modal -->
+<div class="modal modal-blur fade" id="weeklyModal" tabindex="-1" aria-labelledby="weeklyTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="weeklyTitle">Weekly summary (last 7 days)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="weeklyBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+<script>
+const bs = window.tabler.bootstrap || window.tabler;
+const API_BASE = "http://127.0.0.1:8000";
+const token = localStorage.getItem("safescholar_token");
+const username = localStorage.getItem("safescholar_username");
+
+// Guard: no token, no dashboard.
+if (!token) {
+  window.location.href = "index.html";
+}
+
+const authHeaders = { Authorization: `Bearer ${token}` };
+// Expired or invalid login: go back to the login page.
+function handleUnauthorized(res) {
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("safescholar_token");
+    localStorage.removeItem("safescholar_username");
+    window.location.href = "index.html";
+    return true;
+  }
+  return false;
+}
+
+document.getElementById("whoami").textContent = username ? `Logged in as ${username}` : "";
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem("safescholar_token");
+  localStorage.removeItem("safescholar_username");
+  window.location.href = "index.html";
+});
+
+let knownIds = new Set();
+let firstLoad = true;
+const incidentMap = new Map();
+
+const CATEGORY_LABELS = {
+    prompt_injection: "LLM01: Prompt Injection / Jailbreak",
+    harmful_content: "LLM02: Harmful Content / Cyber Misuse",
+    sensitive_information: "LLM03: Sensitive Information Disclosure",
+    academic_dishonesty: "LLM04: Academic Dishonesty",
+    social_engineering: "LLM05: AI Manipulation / Roleplay Bypass",
+    encoded_attacks: "LLM06: Encoded / Obfuscated Attacks",
+    ai_review: "AI Second Review"
+};
+const ACTION_TEXT = {
+  block: "Blocked by the default policy (score 7.0 or more)",
+  warn: "User warned (Medium)",
+  allow: "Logged but allowed (Low)"
+};
+
+// Prompt-derived text (evidence snippets) ends up in incidents, so escape everything we render.
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+function categoryLabel(key) {
+  return CATEGORY_LABELS[key] || String(key || "").replace(/_/g, " ");
+}
+
+function formatScore(score) {
+  return score === null || score === undefined ? "-" : Number(score).toFixed(1);
+}
+
+Chart.defaults.color = "#8B98AD";
+Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+
+let severityChart = new Chart(document.getElementById("severityChart"), {
+  type: "doughnut",
+  data: {
+    labels: ["Critical", "High", "Medium", "Low"],
+    datasets: [{
+      data: [0, 0, 0, 0],
+      backgroundColor: ["#dc2626", "#ea580c", "#2563eb", "#64748b"],
+      borderColor: "#121826",
+      borderWidth: 3
+    }]
+  },
+  options: { cutout: "68%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } } }
+});
+
+function severityBadge(sev) {
+  const s = ["critical", "high", "medium", "low"].includes(sev) ? sev : "low";
+  const label = s.charAt(0).toUpperCase() + s.slice(1);
+  return `<span class="badge badge-${s}">${label}</span>`;
+}
+
+function showToast(incident) {
+  const container = document.getElementById("toastContainer");
+  const el = document.createElement("div");
+  el.className = "toast align-items-center shadow";
+  el.setAttribute("role", "alert");
+  el.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        ${severityBadge(incident.severity)} New incident &mdash; ${esc(categoryLabel(incident.category))}${incident.score != null ? " (" + formatScore(incident.score) + ")" : ""} on ${esc(incident.device_label || "unknown device")}
+      </div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  container.appendChild(el);
+  const toast = new bs.Toast(el, { delay: 6000 });
+  toast.show();
+  el.addEventListener("hidden.bs.toast", () => el.remove());
+}
+
+async function fetchSummary() {
+  const res = await fetch(`${API_BASE}/incidents/summary`, { headers: authHeaders });
+  if (handleUnauthorized(res)) return;
+  if (!res.ok) return;
+  const data = await res.json();
+  document.getElementById("count-critical").textContent = data.critical || 0;
+  document.getElementById("count-high").textContent = data.high || 0;
+  document.getElementById("count-medium").textContent = data.medium || 0;
+  document.getElementById("count-low").textContent = data.low || 0;
+
+  severityChart.data.datasets[0].data = [
+    data.critical || 0, data.high || 0, data.medium || 0, data.low || 0
+  ];
+  severityChart.update();
+}
+
+async function fetchIncidents() {
+  const severity = document.getElementById("filterSeverity").value;
+  const category = document.getElementById("filterCategory").value;
+  const device = document.getElementById("filterDevice").value.trim();
+
+  const params = new URLSearchParams();
+  if (severity) params.append("severity", severity);
+  if (category) params.append("category", category);
+  if (device) params.append("device_label", device);
+  params.append("limit", "50");
+
+  const res = await fetch(`${API_BASE}/incidents?${params.toString()}`, { headers: authHeaders });
+  if (handleUnauthorized(res)) return;
+  if (!res.ok) return;
+  const incidents = await res.json();
+
+  const tbody = document.querySelector("#incidentsTable tbody");
+  tbody.innerHTML = "";
+  document.getElementById("emptyState").textContent =
+    incidents.length === 0 ? "No incidents match these filters." : "";
+
+  const currentIds = new Set();
+
+  incidents.forEach(inc => {
+    currentIds.add(inc.id);
+    incidentMap.set(inc.id, inc);
+    const tr = document.createElement("tr");
+    if (!firstLoad && !knownIds.has(inc.id)) {
+      tr.classList.add("new-row");
+      showToast(inc);
+    }
+    const time = new Date(inc.timestamp).toLocaleTimeString();
+    const date = new Date(inc.timestamp).toLocaleDateString();
+    tr.innerHTML = `
+      <td class="text-muted small">${date}</td>
+      <td class="text-muted small">${time}</td>
+      <td>${severityBadge(inc.severity)}</td>
+      <td class="fw-semibold">${formatScore(inc.score)}</td>
+      <td>${esc(categoryLabel(inc.category))}</td>
+      <td>${esc(inc.device_label || "-")}</td>
+      <td class="small">${esc(inc.message || "")}</td>
+      <td>${inc.breakdown
+        ? `<button class="btn btn-outline-primary btn-sm py-0 why-btn" data-id="${inc.id}">Why?</button>`
+        : ""}${inc.severity?.toLowerCase() === "critical" && inc.appeal_status === "pending"
+        ? ` <button class="btn btn-outline-primary btn-sm py-0 appeal-btn" data-id="${inc.id}">Appeal</button>`
+        : ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  knownIds = currentIds;
+  firstLoad = false;
+}
+
+async function refresh() {
+  await Promise.all([fetchSummary(), fetchIncidents()]);
+}
+
+function openWhy(id) {
+  const inc = incidentMap.get(id);
+  if (!inc || !inc.breakdown) return;
+  const b = inc.breakdown;
+
+  document.getElementById("whyTitle").innerHTML =
+    `${severityBadge(inc.severity)} <span class="ms-2">Score ${formatScore(inc.score)} / 10.0</span>`;
+
+  const steps = (b.steps || []).map(step => `<li class="mb-1">${esc(step)}</li>`).join("");
+  const cats = (b.categories || []).map(c => `
+    <tr>
+      <td>${esc(c.label)}</td>
+      <td>${Number(c.base).toFixed(1)}</td>
+      <td class="small text-muted">${(c.evidence || []).map(e => esc(e)).join("<br>")}</td>
+    </tr>`).join("");
+
+  const aiBlock = b.ai_reason
+    ? `<div class="alert alert-info small py-2"><strong>In plain English:</strong> ${esc(b.ai_reason)}</div>`
+    : "";
+
+  document.getElementById("whyBody").innerHTML = `
+    ${aiBlock}
+    <h6 class="text-muted">How this score was calculated</h6>
+    <ol class="small">${steps}</ol>
+    <h6 class="text-muted mt-4">Matched categories</h6>
+    <div class="table-responsive">
+      <table class="table table-sm table-vcenter">
+        <thead><tr><th>Category</th><th>Base</th><th>Evidence</th></tr></thead>
+        <tbody>${cats}</tbody>
+      </table>
+    </div>
+    <div class="mt-4">
+      <h6 class="text-muted">Uploaded Evidence</h6>
+      ${inc.has_evidence ? `<button
+        type="button"
+        class="btn btn-outline-info btn-sm"
+        id="viewEvidenceBtn">
+        View Uploaded Evidence
+      </button>
+      <div id="evidencePreview" class="mt-3"></div>` : `<p class="small text-muted mb-0">No file or screenshot was attached to this incident.</p>`}
+    </div>
+    <p class="small text-muted mb-0">Policy: ${esc(ACTION_TEXT[inc.action] || "-")}</p>`;
+  
+  const evidenceBtn = document.getElementById("viewEvidenceBtn");
+
+if (evidenceBtn) evidenceBtn.addEventListener("click", async () => {
+    const preview = document.getElementById("evidencePreview");
+
+    preview.textContent = "Loading evidence...";
+
+    const token = localStorage.getItem("safescholar_token");
+
+    if (!token) {
+        preview.textContent = "Administrator login required.";
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `/incidents/${encodeURIComponent(id)}/evidence`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Evidence request failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+
+        if (blob.type.startsWith("image/")) {
+            // Screenshots are shown right here in the dashboard.
+            const imageUrl = URL.createObjectURL(blob);
+
+            const img = document.createElement("img");
+            img.src = imageUrl;
+            img.alt = "Uploaded student evidence";
+            img.className = "img-fluid rounded border";
+
+            img.onload = () => URL.revokeObjectURL(imageUrl);
+
+            preview.replaceChildren(img);
+        } else {
+            // PDF / Word files cannot be previewed safely, so offer a download instead.
+            const disposition = response.headers.get("Content-Disposition") || "";
+            let fileName = `incident_${id}_evidence`;
+            const match = /filename\*=utf-8''([^;]+)|filename="([^"]+)"/i.exec(disposition);
+            if (match) {
+                try { fileName = decodeURIComponent(match[1] || match[2]); }
+                catch (e) { fileName = match[1] || match[2]; }
+            }
+
+            const isPdf = blob.type === "application/pdf";
+            const fileUrl = URL.createObjectURL(blob);
+            const sizeKb = Math.max(1, Math.round(blob.size / 1024));
+
+            const card = document.createElement("div");
+            card.className = "d-flex align-items-center justify-content-between gap-3 border rounded p-3";
+
+            const info = document.createElement("div");
+            const nameEl = document.createElement("div");
+            nameEl.className = "fw-semibold";
+            nameEl.textContent = fileName;           // textContent: the name is student-controlled
+            const metaEl = document.createElement("div");
+            metaEl.className = "small text-muted";
+            metaEl.textContent = (isPdf ? "PDF document" : "Word document") + " \u2022 " + sizeKb + " KB";
+            info.append(nameEl, metaEl);
+
+            const link = document.createElement("a");
+            link.href = fileUrl;
+            link.download = fileName;
+            link.className = "btn btn-success btn-sm";
+            link.textContent = "Download file";
+
+            card.append(info, link);
+            preview.replaceChildren(card);
+        }
+
+    } catch (error) {
+        preview.textContent = error.message;
+    }
+});
+  bs.Modal.getOrCreateInstance(document.getElementById("whyModal")).show();
+}
+
+async function openWeekly(refresh = false) {
+  const body = document.getElementById("weeklyBody");
+  body.innerHTML = '<div class="text-muted">Generating summary&hellip;</div>';
+  bs.Modal.getOrCreateInstance(document.getElementById("weeklyModal")).show();
+  try {
+    const res = await fetch(`${API_BASE}/incidents/weekly-summary${refresh ? "?refresh=true" : ""}`, { headers: authHeaders });
+    if (handleUnauthorized(res)) return;
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const s = data.stats || {};
+    const sev = Object.entries(s.by_severity || {})
+      .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join("");
+    const cats = (s.top_categories || [])
+      .map(([k, v]) => `<tr><td>${esc(categoryLabel(k))}</td><td>${v}</td></tr>`).join("");
+    body.innerHTML = `
+      <p>${esc(data.summary)}</p>
+      <p class="small text-muted">${data.ai_generated ? "Written by AI from aggregated statistics." : "Auto-generated summary (AI not available)."}</p>
+      <div class="row">
+        <div class="col-md-4"><table class="table table-sm"><thead><tr><th>Severity</th><th>Count</th></tr></thead><tbody>${sev || "<tr><td colspan=2>None</td></tr>"}</tbody></table></div>
+        <div class="col-md-4"><table class="table table-sm"><thead><tr><th>Top categories</th><th>Count</th></tr></thead><tbody>${cats || "<tr><td colspan=2>None</td></tr>"}</tbody></table></div>
+        <div class="col-md-4 small">
+          <div>This week: <strong>${s.total_this_week ?? 0}</strong></div>
+          <div>Previous week: <strong>${s.total_previous_week ?? 0}</strong></div>
+          <div>Blocked: <strong>${s.blocked ?? 0}</strong></div>
+          <div>Average score: <strong>${s.average_score ?? "-"}</strong></div>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" id="weeklyRefresh">Regenerate</button>`;
+    document.getElementById("weeklyRefresh").addEventListener("click", () => openWeekly(true));
+  } catch (err) {
+    body.innerHTML = '<div class="text-danger">Could not load the weekly summary.</div>';
+  }
+}
+document.getElementById("weeklyBtn").addEventListener("click", () => openWeekly(false));
+
+let selectedAppealId = null;
+function openAppeal(id) {
+  const inc = incidentMap.get(id);
+  if (!inc || inc.severity?.toLowerCase() !== "critical" || inc.appeal_status !== "pending") return;
+  selectedAppealId = id;
+  document.getElementById("appealBody").innerHTML =
+    `<p><strong>Incident #${inc.id}</strong> — Critical</p><p><strong>Category:</strong> ${esc(categoryLabel(inc.category))}</p><p><strong>Incident:</strong> ${esc(inc.message || "-")}</p><p><strong>Student appeal:</strong></p><div class="student-appeal-reason p-3 rounded" style="white-space:pre-wrap">${esc(inc.appeal_reason || "")}</div>`;
+  bs.Modal.getOrCreateInstance(document.getElementById("appealModal")).show();
+}
+async function decideAppeal(status) {
+  if (!selectedAppealId) return;
+  const response = await fetch(`${API_BASE}/appeals/${selectedAppealId}`, {
+    method: "PATCH", headers: {"Content-Type":"application/json", "Authorization": `Bearer ${token}`},
+    body: JSON.stringify({status})
+  });
+  if (!response.ok) { alert("Appeal decision failed: " + (await response.text())); return; }
+  bs.Modal.getOrCreateInstance(document.getElementById("appealModal")).hide();
+  selectedAppealId = null;
+  await fetchIncidents();
+}
+document.getElementById("approveAppeal").addEventListener("click", () => decideAppeal("approved"));
+document.getElementById("rejectAppeal").addEventListener("click", () => decideAppeal("rejected"));
+document.querySelector("#incidentsTable tbody").addEventListener("click", (e) => {
+  const appealBtn = e.target.closest(".appeal-btn");
+  if (appealBtn) { openAppeal(Number(appealBtn.dataset.id)); return; }
+  const btn = e.target.closest(".why-btn");
+  if (btn) openWhy(Number(btn.dataset.id));
+});
+
+document.getElementById("filterSeverity").addEventListener("change", fetchIncidents);
+document.getElementById("filterCategory").addEventListener("change", fetchIncidents);
+document.getElementById("filterDevice").addEventListener("input", () => {
+  clearTimeout(window._deviceDebounce);
+  window._deviceDebounce = setTimeout(fetchIncidents, 400);
+});
+
+refresh();
+setInterval(refresh, 10000); // 10-second polling, per task requirement
+</script>
+</body>
+</html>

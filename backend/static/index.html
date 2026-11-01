@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SafeScholar | Admin Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B0F17;
+    --navy-soft: #121A27;
+    --line: #243047;
+    --accent: #4FD1C5;
+    --accent-deep: #0E7C73;
+    --ink: #10141C;
+    --ink-soft: #566074;
+    --field-line: #D5DBE5;
+    --text-2: #B7C1D1;
+    --muted: #8B98AD;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--navy-soft);
+    color: #fff;
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+
+  /* Dark blue band */
+  .band { background: var(--navy); }
+  .brand { display: flex; align-items: center; gap: 0.7rem; padding: 1.25rem 0; }
+  .brand img { width: 38px; height: 38px; display: block; }
+  .brand span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.35rem; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 400px);
+    gap: 4rem;
+    align-items: center;
+    padding: 2.5rem 0 4rem;
+  }
+  .hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.3rem); line-height: 1.08; margin-bottom: 1rem; max-width: 15ch; }
+  .hero p { margin: 0; color: var(--text-2); font-size: 1.08rem; max-width: 44ch; }
+
+  /* Login card */
+  .login-card {
+    background: #fff;
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  }
+  .login-card h2 { font-size: 1.5rem; margin-bottom: 1.25rem; color: var(--navy); }
+  .error-box { display: none; background: #FEF3F2; border: 1px solid #FDA29B; color: #B42318; font-size: 0.88rem; padding: 0.65rem 0.9rem; border-radius: 7px; margin-bottom: 1.1rem; }
+  .error-box.visible { display: block; }
+  .error-box a { color: #7A271A; font-weight: 600; }
+  .field { margin-bottom: 1.1rem; }
+  .field label { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 0.4rem; }
+  .field input {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.98rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--field-line);
+    border-radius: 8px;
+  }
+  .field input:focus { outline: none; border-color: var(--accent-deep); box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.45); }
+  .submit-btn { width: 100%; padding: 0.8rem; margin-top: 0.4rem; font-family: inherit; font-size: 0.98rem; font-weight: 600; color: #06201C; background: var(--accent); border: none; border-radius: 8px; cursor: pointer; }
+  .submit-btn:hover { filter: brightness(0.94); }
+  .submit-btn:disabled { opacity: 0.6; cursor: default; }
+  .submit-btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .alt-text { margin: 1.25rem 0 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .alt-text a { color: var(--accent-deep); font-weight: 600; text-decoration: none; }
+  .alt-text a:hover { text-decoration: underline; }
+  .alt-text a:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; border-radius: 3px; }
+
+  /* Lower section */
+  .points { flex: 1; padding: 3rem 0; }
+  .points .wrap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+  .point { border-top: 3px solid var(--accent); padding-top: 1rem; }
+  .point h2 { font-family: 'IBM Plex Sans', sans-serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0; color: #fff; margin-bottom: 0.3rem; }
+  .point p { margin: 0; font-size: 0.95rem; color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 2rem; padding: 1.5rem 0 2.5rem; }
+    .hero h1 { max-width: none; }
+    .points { padding: 2rem 0; }
+    .points .wrap { grid-template-columns: 1fr; gap: 1.5rem; }
+  }
+</style>
+<link rel="icon" type="image/png" href="SafeScholar-logo.png">
+</head>
+<body>
+
+<div class="band">
+  <div class="wrap">
+    <div class="brand">
+      <img src="SafeScholar-logo.png" alt="">
+      <span>SafeScholar</span>
+    </div>
+
+    <div class="hero">
+      <div>
+        <h1>AI prompt safety for your campus.</h1>
+        <p>SafeScholar detects jailbreak attempts on AI chat sites and shows staff what happened, how serious it is and why.</p>
+      </div>
+
+      <div class="login-card">
+        <h2>Staff log in</h2>
+        <div id="errorBox" class="error-box" role="alert"></div>
+        <form id="loginForm">
+          <div class="field">
+            <label for="username">Username or staff email</label>
+            <input type="text" id="username" required autofocus autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="submit-btn" id="loginBtn">Log in</button>
+        </form>
+        <p class="alt-text">Staff member? <a href="signup.html">Create an account</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="points">
+  <div class="wrap">
+    <div class="point">
+      <h2>Detects</h2>
+      <p>A Chrome extension checks prompts as they are sent.</p>
+    </div>
+    <div class="point">
+      <h2>Scores</h2>
+      <p>Each incident gets a 0.0 to 10.0 severity score with a reason.</p>
+    </div>
+    <div class="point">
+      <h2>Alerts</h2>
+      <p>New incidents appear on the dashboard within seconds.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const errorBox = document.getElementById("errorBox");
+  const btn = document.getElementById("loginBtn");
+
+  errorBox.classList.remove("visible");
+  btn.disabled = true;
+  btn.textContent = "Logging in...";
+
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        // Correct password but the staff email isn't verified yet.
+        errorBox.textContent = (data.detail || "Verify your staff email before logging in.") + " ";
+        const link = document.createElement("a");
+        link.href = `signup.html?verify=${encodeURIComponent(username.trim().toLowerCase())}`;
+        link.textContent = "Enter your code";
+        errorBox.appendChild(link);
+        errorBox.classList.add("visible");
+        return;
+      }
+      throw new Error(data.detail || "Login failed");
+    }
+
+    const data = await res.json();
+    localStorage.setItem("safescholar_token", data.access_token);
+    localStorage.setItem("safescholar_username", username);
+    window.location.href = "dashboard.html";
+  } catch (err) {
+    errorBox.textContent = err.message || "Something went wrong. Is the server running?";
+    errorBox.classList.add("visible");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Log in";
+  }
+});
+</script>
+</body>
+</html>

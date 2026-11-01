@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-jose[cryptography]
+bcrypt
+python-dotenv
+google-genai
+requests
+python-multipart
